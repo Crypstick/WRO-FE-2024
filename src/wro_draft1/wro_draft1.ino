@@ -54,7 +54,6 @@ void setup() {
   Serial.println("Do not let batteries go below 6.0V");
   evo.writeToDisplay(evo.getBattery(), 0);
   evo.writeToDisplay("halloooo chat ", 2, false);
-  evo.writeToDisplay("i love kieren", 3, false);
 
   //Plays the buzzer for 300ms
   evo.playTone(NOTE_G4, 300);
