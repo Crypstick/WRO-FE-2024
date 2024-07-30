@@ -13,7 +13,7 @@
 EVO evo;
 // Declares Motor and selects port (M1-4), flipped?
 EV3Motor steeringMotor(M1, true);
-Ev3Motor drivingMotor(M2, true);
+EV3Motor drivingMotor(M2, true);
 
 // Declares Magnometer
 Magnometer magnometer(I2C2);
@@ -52,8 +52,9 @@ void setup() {
   Serial.print("Battery Voltage: ");
   Serial.println(evo.getBattery());
   Serial.println("Do not let batteries go below 6.0V");
-  evo.writeToDisplay("Battery", 0, true);
   evo.writeToDisplay(evo.getBattery(), 0);
+  evo.writeToDisplay("halloooo chat ", 2, false);
+  evo.writeToDisplay("i love kieren", 3, false);
 
   //Plays the buzzer for 300ms
   evo.playTone(NOTE_G4, 300);
@@ -68,7 +69,7 @@ void loop() {
   for (int i = 0; i < sensorCount; i++) {
     
     evo.selectI2CChannel(sensors[i]);
-    evo.read(sensors[i]);
+//  Wire.read(); to read the transmission
   }
 
 }
@@ -76,22 +77,11 @@ void loop() {
 void steerToAngle(int angle, int time) {
   int now = millis();
   while ((millis() - now) <time) {
-    steer.run((steer.getAngle()-angle)*-5);
+    steeringMotor.run((steeringMotor.getAngle()-angle)*-5);
   }
-  steer.brake();
+  steeringMotor.brake();
 }
 
-void resetSteering() {
-  steeringMotor.run(-100);
-  delay(1500);
-  steeringMotor.resetAngle();
-  steeringMotor.run(100);
-  delay(2000);
-  maxSteer = steer.getAngle();
-  steerToAngle(maxSteer/2, 1000);
-  steer.resetAngle();
-  delay(1000);
-}
 
 int limit(int value, int min, int max) {
   if (value < min) return min;
