@@ -3,6 +3,10 @@
 #include <Magnometer.h>
 #include <EV3Motor.h>
 
+#include "Adafruit_VL53L0X.h"
+
+Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+
 
 
 #define magnometerPin 1
@@ -11,12 +15,14 @@
 
 
 EVO evo;
-// Declares Motor and selects port (M1-4), flipped?
+// Declares Motor and selects port (M1-4), flipped
+
 EV3Motor steeringMotor(M1, true);
-EV3Motor drivingMotor(M2, true);
+EV3Motor drivingMotor(M2, false);
 
 // Declares Magnometer
-Magnometer magnometer(I2C2);
+
+// Magnometer magnometer(I2C2);
 int maxSteer;
 
 
@@ -35,15 +41,17 @@ int limit(int value, int min, int max);
 
 void setup() {
   // put your setup code here, to run once:
- Serial.begin(115200);
+  Serial.begin(115200);
   evo.begin();
   evo.beginDisplay();
   // Initializes motor
   steeringMotor.begin();
   drivingMotor.begin();
   // Initalises Magnometer
+  /*
   magnometer.begin();
   magnometer.setTargetHeading();
+  */
   // Reset encoder
   steeringMotor.resetAngle();
   drivingMotor.resetAngle();
@@ -58,20 +66,46 @@ void setup() {
   //Plays the buzzer for 300ms
   evo.playTone(NOTE_G4, 300);
 
+  evo.selectI2CChannel(1);
+
+  if (!lox.begin()) {
+
+    Serial.println(F("Failed to boot VL53L0X"));
+    while(1);
+  }
+
   steeringMotor.brake();
   drivingMotor.brake();
+
 
 }
 
 void loop() {
-  
+  /*
   for (int i = 0; i < sensorCount; i++) {
     
     evo.selectI2CChannel(sensors[i]);
-//  Wire.read(); to read the transmission
+    Wire.read(); to read the transmission
   }
+  */
+  evo.selectI2CChannel(1);
+  VL53L0X_RangingMeasurementData_t measure;
+  lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
+
+  if (measure.RangeStatus != 4) {  // phase failures have incorrect data
+    Serial.println(measure.RangeMilliMeter);
+    evo.writeToDisplay(measure.RangeMilliMeter, 3, true);
+  } else {
+    Serial.println(" out of range ");
+  };
+  steeringMotor.run(200);
+  drivingMotor.run(200);
+  steeringMotor.run(-200);
+  drivingMotor.run(200);
+
 
 }
+
 
 void steerToAngle(int angle, int time) {
   int now = millis();
