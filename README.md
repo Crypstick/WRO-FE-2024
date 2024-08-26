@@ -28,20 +28,21 @@ _This part must be filled by participants with the technical clarifications abou
 
 ### Usage
 
-1.⁠ ⁠Install the libraries found in the 'Libraries_To_Add.txt' by going to the library manager in the Arduino IDE and installing them.
-2.⁠ ⁠Install 'src/EvoEditted.zip' and follow the following on the Arduino IDE: 'Sketch --> Include Library --> Add .ZIP Library --> Select EvoEditted.zip'.
-3.⁠ ⁠Open the file ' src/wro_final/wro_final.ino' with the Arduino IDE.
+
+1.⁠ ⁠Install the libraries found in the `Libraries_To_Add.txt` by going to the library manager in the Arduino IDE and installing them by name. 
+2.⁠ ⁠Install `src/EvoEditted.zip` and follow the following on the Arduino IDE: `Sketch --> Include Library --> Add .ZIP Library --> Select EvoEditted.zip`.
+3.⁠ ⁠Open the file `src/wro_final/wro_final.ino` with the Arduino IDE.
 
 ## Reminders before running the bot
 
 - Software
-  - Ensure that the bot is set to ESP32S3
+  - Ensure that the board is set to ESP32S3
   - Ensure serial bot rate is 115200
   - Run!
 - Hardware
-  - Wire connected properly
-  - Components working properly
-  - Bot structure is all connected properly
+  - Wires have been connected properly
+  - Components are working properly
+  - Structural parts are connected properly
   - Spaces on the wheels are correct
 - Placement of the bot
   - Make sure the bot is placed straight
