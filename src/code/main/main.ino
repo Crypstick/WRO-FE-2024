@@ -1,6 +1,5 @@
 #include <Wire.h>
 #include <Evo.h>
-#include <Magnometer.h>
 #include <EV3Motor.h>
 #include <VL53L0X.h>
 #include <MPU.h>
@@ -20,10 +19,9 @@ unsigned short STARTHEADING;
 const int STEERINGDIFFERENCE = 100;
 
 bool gyro_initialised = false;
-int _yaw = 0;
-long _lastms = 0;
 int dir = 0;
-const int targets[4] = {25, 100, 210, 300};
+int hit_count = 0;
+const int targets[4] = {64, 152, 256, 368};
 
 
 
@@ -61,32 +59,74 @@ void setup() {
 
   //Plays the buzzer for 300ms
   evo.playTone(NOTE_G4, 300);
-  while (abs(gyro.getHeading() - targets[0]) > 10) {}
+  hit_count = 0;
+  while (hit_count < 10) {
+    if ( abs(gyro.getHeading() - targets[0]) < 10 ) hit_count++;
+    else hit_count = 0;
+    Serial.println("waiting for gyro");
+  }
   drive_motor.run(250);
 
 }
 
 
-
+int turns = 0;
 void loop() {
 
   //sensorprint();
+  //wait to be vaugley in line
   while (abs(gyro.getHeading() - targets[dir]) > 10) {
     Serial.println("waiting");
     adjustHeading(targets[dir]);
     sensorprint();
   }
-  while (distance_right.getDistance() < 500) {
+  //wait for a wall
+  hit_count = 0;
+  while (hit_count < 4) {
+    int dist_right = distance_right.getDistance();
+    if (dist_right < 800) hit_count++;
+    else if (dist_right != -1000) hit_count = 0;
     Serial.println("in");
     adjustHeading(targets[dir]);
     sensorprint();
   }
-  if (dir == 1) {
+  //wait for no wall
+  hit_count = 0;
+  while (hit_count < 4) {
+    int dist_right = distance_right.getDistance();
+    if (dist_right > 800) hit_count++;
+    else if (dist_right != -1000) hit_count = 0;
+    Serial.println("in");
+    adjustHeading(targets[dir]);
+    sensorprint();
+  }
+ 
+  if (dir == 3) dir = 0;
+  else dir += 1;
+  Serial.println("BANGGGG");
+  turns++;
+  drive_motor.run(0);
+  delay(1000);
+  drive_motor.run(250);
+  if (turns == 4) {
+    while (abs(gyro.getHeading() - targets[dir]) > 10) {
+      Serial.println("waiting");
+      adjustHeading(targets[dir]);
+      sensorprint();
+    }
+    //wait for a wall
+    hit_count = 0;
+    while (hit_count < 4) {
+      int dist_right = distance_right.getDistance();
+      if (dist_right < 800) hit_count++;
+      else if (dist_right != -1000) hit_count = 0;
+      Serial.println("in");
+      adjustHeading(targets[dir]);
+      sensorprint();
+    }
     drive_motor.run(0);
     while (true) {sensorprint();}
   }
-  if (dir == 3) dir = 0;
-  else dir += 1;
 
   
   
@@ -141,7 +181,6 @@ void initialiseSteering() {
 void setSteering(int speed, int percent) {
   percent = clamp(percent, -100, 100);
   float a = ((static_cast<float>(STEERINGDIFFERENCE)) / 100) * percent;
-  Serial.println(a);
   steer_motor.runTarget(speed, a);
 }
 
