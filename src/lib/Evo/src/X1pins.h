@@ -62,10 +62,10 @@ enum SensorPort
 enum I2CPort
 {
     I2C1 = 0,
-    I2C2,
-    I2C3,
-    I2C4,
-    I2C5
+    I2C2 = 1,
+    I2C3 = 2,
+    I2C4 = 3,
+    I2C5 = 4
 };
 
 enum EIOPin

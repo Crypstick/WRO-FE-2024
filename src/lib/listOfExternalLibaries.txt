@@ -1,0 +1,8 @@
+List of libraries to install
+ESP32Encoder by Kevin Harrington 0.11.6
+BQ25887 by SpaceTrek 0.1.2
+SX1509 IO Expander by Sparkfun Electronics 3.0.5
+ESP8266 and ESP32 OLED driver for SSD1306 by ThingPulse, Fabrice Weinbery 4.6.1
+Adafruit_HMC5883_Unified by Adafrruit 1.2.3
+EspSoftwareSerial by Dirk Kaar, Peter Lerup 8.1.0
+Adafruit Unified Sensor by Adafruit 1.1.14

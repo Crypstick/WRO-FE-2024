@@ -1,13 +1,13 @@
 #include <Magnometer.h>
 
-Magnometer::Magnometer(I2CPort i2cPort, float declinationAngle)
+Magnometer::Magnometer(uint8_t i2cPort, float declinationAngle)
 {
     _i2cPort = i2cPort;
     _declinationAngle = declinationAngle;
 }
 void Magnometer::begin()
 {
-    EVO::getInstance().selectI2CChannel(static_cast<int>(this->_i2cPort));
+    EVO::getInstance().selectI2CChannel(this->_i2cPort);
     if (!magnometer.begin())
     {
         Serial.println("Ooops, no HMC5883 detected ... Check your wiring!");
@@ -15,7 +15,7 @@ void Magnometer::begin()
 }
 float Magnometer::getHeading(float offsetHeading)
 {
-    EVO::getInstance().selectI2CChannel(static_cast<int>(this->_i2cPort));
+    EVO::getInstance().selectI2CChannel(this->_i2cPort);
     sensors_event_t event;
     magnometer.getEvent(&event);
     float heading = atan2(event.magnetic.y, event.magnetic.x);
@@ -31,9 +31,9 @@ float Magnometer::getHeading(float offsetHeading)
     float headingDegrees = heading * 180 / M_PI;
     return headingDegrees;
 }
-void Magnometer::setTargetHeading()
+void Magnometer::setTargetHeading(float target)
 {
-    this->_targetHeading = this->getHeading();
+    this->_targetHeading = target;
 }
 float Magnometer::getTargetHeading()
 {

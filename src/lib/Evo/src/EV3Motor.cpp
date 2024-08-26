@@ -3,20 +3,14 @@
 SX1509 EV3Motor::io;
 bool EV3Motor::SX1509Initialized = false;
 
-int clamp(int value, int min, int max)
+int clampp(int value, int min, int max)
 {
     if (value < min)
-    {
         return min;
-    }
     else if (value > max)
-    {
         return max;
-    }
     else
-    {
         return value;
-    }
 }
 
 EV3Motor::EV3Motor(MotorPort motorPort, bool motorFlip)
@@ -69,38 +63,12 @@ void EV3Motor::begin()
     io.pinMode(motorPins.power2, ANALOG_OUTPUT);
     encoder.attachFullQuad(motorPins.tach1, motorPins.tach2);
     encoder.clearCount();
+    xTaskCreate(motorControlTask, "Motor Control Task", 2048, this, 1, NULL);
 }
 
-// Method to get current angle
-int EV3Motor::getAngle()
+void EV3Motor::move(int speed)
 {
-    return encoder.getCount();
-}
-
-// Method to reset angle
-void EV3Motor::resetAngle()
-{
-    encoder.setCount(0);
-}
-
-// Method to stop the motor
-void EV3Motor::coast()
-{
-    this->run(0);
-}
-
-// Method to brake the motor
-void EV3Motor::brake()
-{
-    EVO::getInstance().selectI2CChannel(SX1509_CHANNEL);
-    io.analogWrite(motorPins.power1, 255);
-    io.analogWrite(motorPins.power2, 255);
-}
-
-// Method to run the motor at a specified speed
-void EV3Motor::run(int speed)
-{
-    speed = clamp(speed, -255, 255);
+    speed = clampp(speed, -255, 255);
     EVO::getInstance().selectI2CChannel(SX1509_CHANNEL);
     if (speed > 0)
     {
@@ -119,14 +87,94 @@ void EV3Motor::run(int speed)
     }
 }
 
+void EV3Motor::run(int speed)
+{
+    this->motorState = RUN;
+    this->move(speed);
+}
+// Method to get current angle
+int EV3Motor::getAngle()
+{
+    return encoder.getCount();
+}
+
+// Method to reset angle
+void EV3Motor::resetAngle()
+{
+    encoder.setCount(0);
+}
+
+void EV3Motor::setAngle(int angle)
+{
+    encoder.setCount(angle);
+}
+
+// Method to stop the motor
+void EV3Motor::coast()
+{
+    this->motorState = COAST;
+    this->move(0);
+}
+
+// Method to brake the motor
+void EV3Motor::brake()
+{
+    this->resetAngle();
+    this->targetAngle = 0;
+    this->motorState = BRAKE;
+}
+
 // Method to run the motor for a specified number of degrees
 void EV3Motor::runDegrees(int speed, int degrees)
 {
+    this->motorState = RUN;
     this->resetAngle();
     while (abs(this->getAngle()) < degrees)
     {
-        // Serial.println(this->getAngle());
-        this->run(speed);
+        this->move(speed);
     }
     this->brake();
+}
+
+void EV3Motor::runTarget(int speed, int degrees, bool blocking)
+{
+    this->targetSpeed = speed;
+    this->targetAngle = degrees;
+    this->completed = false;
+    this->motorState = TARGET;
+    if (blocking)
+    {
+        while ((abs(this->getAngle()) - degrees) < 2)
+            ;
+    }
+}
+
+void EV3Motor::motorControlTask(void *parameter)
+{
+    EV3Motor *motor = (EV3Motor *)parameter;
+    int motorSpeed;
+    int error;
+    for (;;)
+    {
+        // if (xSemaphoreTake(motor->xSemaphore, portMAX_DELAY))
+        // {
+        int encoder = motor->getAngle();
+        switch (motor->motorState)
+        {
+        case BRAKE:
+            motor->move((encoder - motor->targetAngle) * -10);
+            break;
+        case TARGET:
+            error = encoder - motor->targetAngle;
+            motorSpeed = clampp(error * -10, motor->targetSpeed * -1, motor->targetSpeed);
+            motor->move(motorSpeed);
+            break;
+        case COAST:
+        case RUN:
+            break;
+        }
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+        // xSemaphoreGive(motor->xSemaphore);
+        // }
+    }
 }

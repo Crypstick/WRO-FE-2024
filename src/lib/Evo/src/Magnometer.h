@@ -8,15 +8,15 @@ class Magnometer
 {
 private:
     Adafruit_HMC5883_Unified magnometer;
-    I2CPort _i2cPort;
+    uint8_t _i2cPort;
     float _declinationAngle, _targetHeading;
 
 public:
     // Constructor with port and positive direction
-    Magnometer(I2CPort i2cPort, float declinationAngle = 0);
+    Magnometer(uint8_t i2cPort, float declinationAngle = 0);
     void begin();
     float getHeading(float offsetHeading = 0);
-    void setTargetHeading();
+    void setTargetHeading(float target);
     float getTargetHeading();
     float getRelativeHeading();
 };

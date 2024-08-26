@@ -16,6 +16,7 @@ void EVO::selectI2CChannel(uint8_t channel)
         Wire.beginTransmission(TCA9548A_ADDR); // TCA9548A address
         Wire.write(1 << channel);              // send byte to select bus
         Wire.endTransmission();
+        _channel = channel;
     }
 }
 float EVO::getBattery()
