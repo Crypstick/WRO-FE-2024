@@ -20,7 +20,6 @@ This repository contains engineering materials of a self-driven vehicle's model 
   1. `wro_final/wro_final.ino` is our main source code to operate the bot.
   2. `Evoeditted.zip` is our library required to run our microcontroller.
 - `models` is for the files for models used by 3D printers, laser cutting machines and CNC machines to produce the vehicle elements. If there is nothing to add to this location, the directory can be removed.
-  - 
 - `other` is for other files which can be used to understand how to prepare the vehicle for the competition. It may include documentation how to connect to a SBC/SBM and upload files there, datasets, hardware specifications, communication protocols descriptions etc. If there is nothing to add to this location, the directory can be removed.
 
 ## Introduction
