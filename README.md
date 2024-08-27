@@ -6,7 +6,7 @@ This repository contains engineering materials of a self-driven vehicle's model 
 
 - `t-photos` contains 2 photos of the team (an official one and one funny photo with all team members)
   - `Formal.jpeg` contains a formal picture of the team
-  - `Informal.jpeg ` contains a funny picture of the team
+  - `Informal.jpeg` contains a funny picture of the team
 - `v-photos` contains 6 photos of the vehicle (from every side, from top and bottom)
   - `Back.jpeg` contains 1 photo of the back view of our bot
   - `Bottom.jpeg` contains 1 photo of the bottom view of our bot
