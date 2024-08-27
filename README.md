@@ -8,12 +8,12 @@ This repository contains engineering materials of a self-driven vehicle's model 
   - `Formal.jpeg` contains a formal picture of the team
   - `Informal.jpeg` contains a funny picture of the team
 - `v-photos` contains 6 photos of the vehicle (from every side, from top and bottom)
-  - `Back.jpeg` contains 1 photo of the back view of our bot
-  - `Bottom.jpeg` contains 1 photo of the bottom view of our bot
-  - `Front.jpeg` contains 1 photo of the front view of our bot
-  - `Left.jpeg` contains 1 photo of the left view of our bot
-  - `Right.jpeg` contains 1 photo of the right view of our bot
-  - `Top.jpeg` contains 1 photo of the top view of our bot
+  - `Back View.jpeg` contains 1 photo of the back view of our bot
+  - `Bottom View.jpeg` contains 1 photo of the bottom view of our bot
+  - `Front View.jpeg` contains 1 photo of the front view of our bot
+  - `Left View.jpeg` contains 1 photo of the left view of our bot
+  - `Right View.jpeg` contains 1 photo of the right view of our bot
+  - `Top View.jpeg` contains 1 photo of the top view of our bot
 - `video` contains the video.md file with the link to a video where driving demonstration exists
 - `schemes` contains one or several schematic diagrams in form of JPEG, PNG or PDF of the electromechanical components illustrating all the elements (electronic components and motors used in the vehicle and how they connect to each other.
 - `src` contains code of control software for all components which were programmed to participate in the competition
