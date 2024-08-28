@@ -23,6 +23,8 @@ This repository contains engineering materials of a self-driven vehicle's model 
   - `VL53LOX lego mount.stl` contains a 3d model of a mount for our time of flight sensor
   - `tcs3472 colour sensor lego mount.stl` contains 3d model of a mount for our colour sensor
 - `other` is for other files which can be used to understand how to prepare the vehicle for the competition. It may include documentation how to connect to a SBC/SBM and upload files there, datasets, hardware specifications, communication protocols descriptions etc. If there is nothing to add to this location, the directory can be removed.
+  - `Block diagram.jpeg` contains a photo of our block diagram
+  - ` Microcontroller System Diagram` contains a photo of our microcontroller system diagram
 
 ## Introduction
 
