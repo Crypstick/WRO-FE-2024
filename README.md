@@ -24,12 +24,10 @@ This repository contains engineering materials of a self-driven vehicle's model 
 
 ## Introduction
 
-_This part must be filled by participants with the technical clarifications about the code: which modules the code consists of, how they are related to the electromechanical components of the vehicle, and what is the process to build/compile/upload the code to the vehicle’s controllers._
-
 ### Usage
 
 
-1.⁠ ⁠Install the libraries found in the `Libraries_To_Add.txt` by going to the library manager in the Arduino IDE and installing them by name. 
+1.⁠ ⁠Install the libraries found in the `Libraries_To_Add.txt` by going to the library manager in the Arduino IDE and installing them by name. **ALL LIBRARIRES ARE REQUIRED FOR THE CODE TO RUN CORRECTLY.**
 2.⁠ ⁠Install `src/EvoEditted.zip` and follow the following on the Arduino IDE: `Sketch --> Include Library --> Add .ZIP Library --> Select EvoEditted.zip`.
 3.⁠ ⁠Open the file `src/wro_final/wro_final.ino` with the Arduino IDE.
 
