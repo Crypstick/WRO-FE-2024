@@ -61,7 +61,7 @@ This repository contains engineering materials of a self-driven vehicle's model 
 7. Charger: BQ25887 x1
 8. I2C Multiplexor: TCA9548A x1
 9. IO Multiiplexor: SX1506 x1
-10. Batteries: lithium-ion battery 2s x4
+10. Batteries: NCR18650B x2
 
 
 
