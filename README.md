@@ -16,10 +16,14 @@ This repository contains engineering materials of a self-driven vehicle's model 
   - `Top View.jpeg` contains 1 photo of the top view of our bot
 - `video` contains the video.md file with the link to a video where driving demonstration exists
 - `schemes` contains one or several schematic diagrams in form of JPEG, PNG or PDF of the electromechanical components illustrating all the elements (electronic components and motors used in the vehicle and how they connect to each other.
+  - `Overall System  Diagram.png` contains a photo of our block diagram
+  - ` Microcontroller System Diagram.png` contains a photo of our microcontroller system diagram
 - `src` contains code of control software for all components which were programmed to participate in the competition
   1. `wro_final/wro_final.ino` is our main source code to operate the bot.
   2. `Evoeditted.zip` is our library required to run our microcontroller.
 - `models` is for the files for models used by 3D printers, laser cutting machines and CNC machines to produce the vehicle elements. If there is nothing to add to this location, the directory can be removed.
+  - `VL53LOX lego mount.stl` contains a 3d model of a mount for our time of flight sensor
+  - `tcs3472 colour sensor lego mount.stl` contains 3d model of a mount for our colour sensor
 - `other` is for other files which can be used to understand how to prepare the vehicle for the competition. It may include documentation how to connect to a SBC/SBM and upload files there, datasets, hardware specifications, communication protocols descriptions etc. If there is nothing to add to this location, the directory can be removed.
 
 ## Introduction
