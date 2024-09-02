@@ -18,18 +18,20 @@ void VL53L0X::begin()
 int VL53L0X::getDistance()
 {
     EVO::getInstance().selectI2CChannel(this->_i2cPort);
-    if (millis() - this->_lastms > 50){
+    if (millis() - this->_lastms > 20){
         lox.rangingTest(&this->measure, false); // pass in 'true' to get debug data printout!
 
         if (this->measure.RangeStatus != 4)
         {
-            return this->measure.RangeMilliMeter;
+            this->_reading = this->measure.RangeMilliMeter;
+            
         }
         else
         {
-            return 10000;
+            this->_reading = this->measure.RangeMilliMeter;
         }
+        return this->_reading;
         this->_lastms = millis();
     }
-    return -1000;
+    return _reading;
 }
