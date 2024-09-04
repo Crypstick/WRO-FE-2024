@@ -19,8 +19,9 @@ This repository contains engineering materials of a self-driven vehicle's model 
   - `Overall System  Diagram.png` contains a photo of our block diagram
   - ` Microcontroller System Diagram.png` contains a photo of our microcontroller system diagram
 - `src` contains code of control software for all components which were programmed to participate in the competition
-  1. `wro_final/wro_final.ino` is our main source code to operate the bot.
-  2. `Evoeditted.zip` is our library required to run our microcontroller.
+  1. `mainopen/mainopen.ino` is our main source code to operate the bot for the Open Challenge.
+  2. `mainobject/mainobject.ino` is our main source code to operate the bot for the Obstacle Challenge.
+  3. `lib/Evo.zip` is our library required to run our microcontroller, with other external libraries in the folder.
 - `models` is for the files for models used by 3D printers, laser cutting machines and CNC machines to produce the vehicle elements. If there is nothing to add to this location, the directory can be removed.
   - `VL53LOX lego mount.stl` contains a 3d model of a mount for our time of flight sensor
   - `tcs3472 colour sensor lego mount.stl` contains 3d model of a mount for our colour sensor
