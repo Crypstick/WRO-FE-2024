@@ -12,24 +12,24 @@ void VL53L0X::begin()
     if (!this->lox.begin())
     {
         Serial.println(F("Failed to boot VL53L0X"));
+        EVO::getInstance().writeToDisplay(2, 2, "tof died");
+        while (true) {
+            delay(10);
+        }
     }
 }
 
 int VL53L0X::getDistance()
 {
     EVO::getInstance().selectI2CChannel(this->_i2cPort);
-    if (millis() - this->_lastms > 50){
-        lox.rangingTest(&this->measure, false); // pass in 'true' to get debug data printout!
-
-        if (this->measure.RangeStatus != 4)
-        {
-            return this->measure.RangeMilliMeter;
-        }
-        else
-        {
-            return 10000;
-        }
+    //delay(10);
+    
+    if (millis() - this->_lastms > 20){
+        this->lox.rangingTest(&this->measure, false); // pass in 'true' to get debug data printout!
+        this->_reading = this->measure.RangeMilliMeter;
+        if (this->_reading < 10) this->_reading = 8191;
         this->_lastms = millis();
     }
-    return -1000;
+    return this->_reading;
+    
 }

@@ -25,7 +25,8 @@ const int kP = 8;
 bool gyro_initialised = false;
 int dir = 0;
 int hit_count = 0;
-const int targets[4] = {95, 176, 247, 331};
+const int targets[4] = {83, 176, 247, 331};
+int startingDir = 0;
 
 
 
@@ -69,6 +70,15 @@ void setup() {
     else hit_count = 0;
     Serial.println("waiting for gyro");
   }
+
+  for (int i = 0; i < 4; i++) {
+    int startDiff = abs(gyro.getHeading())
+    if (startDiff - targets[i]) < 20) {
+      dir = i; 
+    }
+    
+
+  }
   drive_motor.run(250);
 
 }
@@ -81,6 +91,8 @@ void loop() {
   //sensorprint();
   //wait to be vaugley in line
   evo.playTone(NOTE_A4, 100);
+
+  
   while (abs(gyro.getHeading() - targets[dir]) > 10) {
     Serial.println("waiting");
     followSegment(targets[dir], turningSide);

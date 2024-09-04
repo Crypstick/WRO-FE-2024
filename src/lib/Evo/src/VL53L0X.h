@@ -11,6 +11,7 @@ private:
     uint8_t _i2cPort;
     VL53L0X_RangingMeasurementData_t measure;
     uint32_t _lastms = 0;
+    int _reading = 0;
 
 public:
     // Constructor with port and positive direction

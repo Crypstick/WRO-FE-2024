@@ -9,37 +9,46 @@ MPU::MPU()
   
 void MPU::begin()
 {
-    _yaw = 0;
     Wire1.begin(17, 18);
-    MPU9250Setting setting;
-    setting.accel_fs_sel = ACCEL_FS_SEL::A16G;
-    setting.gyro_fs_sel = GYRO_FS_SEL::G2000DPS;
-    setting.mag_output_bits = MAG_OUTPUT_BITS::M16BITS;
-    setting.fifo_sample_rate = FIFO_SAMPLE_RATE::SMPL_125HZ;
-    setting.gyro_fchoice = 0x03;
-    setting.gyro_dlpf_cfg = GYRO_DLPF_CFG::DLPF_20HZ;
-    setting.accel_fchoice = 0x01;
-    setting.accel_dlpf_cfg = ACCEL_DLPF_CFG::DLPF_21HZ;
-    if (!mpu.setup(0x68, MPU9250Setting(), Wire1)) 
-    {
-        Serial.println(F("Failed to boot MPU9250"));
-    }
+    _yaw = 0;
+    int status = mpu.begin();
 
-    mpu.setAccBias(54.66, 30.68, -9.59);
-    mpu.setGyroBias(-3.24, -0.52, 0.05);
-    mpu.setMagBias(178.63, 319.09, 30.57);
-    mpu.setMagScale(0.80, 0.68, 3.68);
-    mpu.setMagneticDeclination(0.03);
-    
+    float hxb = 17.168816; // mag bias of 10 uT
+    float hxs = 0.786952; // mag scale factor of 0.97
+    mpu.setMagCalX(hxb,hxs);
+
+    float hyb = 28.570538; // mag bias of 10 uT
+    float hys = 0.797671; // mag scale factor of 0.97
+    mpu.setMagCalY(hyb,hys);
+
+    float hzb = -15.896074; // mag bias of 10 uT
+    float hzs = 2.102503; // mag scale factor of 0.97
+    mpu.setMagCalZ(hzb,hzs);
+    if (status < 0) {
+        Serial.println("IMU initialization unsuccessful");
+        Serial.println("Check IMU wiring or try cycling power");
+        Serial.print("Status: ");
+        Serial.println(status);
+        while(1) {}
+    }
+    // setting the accelerometer full scale range to +/-8G 
+    mpu.setAccelRange(MPU9250::ACCEL_RANGE_8G);
+    // setting the gyroscope full scale range to +/-500 deg/s
+    mpu.setGyroRange(MPU9250::GYRO_RANGE_500DPS);
+    // setting DLPF bandwidth to 20 Hz
+    mpu.setDlpfBandwidth(MPU9250::DLPF_BANDWIDTH_20HZ);
+    // setting SRD to 19 for a 50 Hz update rate
+    mpu.setSrd(19);
 }
 
 
 float MPU::getHeading(int offset)
 {
-    if (mpu.update() && (millis() - _lastms) > 50)
+    if ((millis() - _lastms) > 50)
     {
         _lastms = millis();
-        _yaw = mpu.getYaw();
+        mpu.readSensor();
+        _yaw = std::atan2(mpu.getMagY_uT(), mpu.getMagX_uT()) * 180 / PI;
         
         _yaw -= offset;
         while (_yaw < 0 or _yaw > 360)

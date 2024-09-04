@@ -1,87 +1,86 @@
 #include "MPU9250.h"
+#include <Wire.h>
 #include <Evo.h>
+#include <EV3Motor.h>
+#include <VL53L0X.h>
+#include <cmath>
 
-MPU9250 mpu;
+
 EVO evo;
+MPU9250 IMU(Wire1,0x68);
+
+VL53L0X distance_left(2);
+VL53L0X distance_right(3);
+
+int status;
 
 void setup() {
-    evo.begin();
-    Serial.begin(115200);
-    Wire1.begin(17, 18);
+  Serial.begin(115200);
+  Wire1.begin(17, 18);
+  evo.begin();
+  evo.playTone(NOTE_A4, 300);
+  evo.beginDisplay();
+  evo.writeToDisplay(evo.getBattery(), 0, true);
 
-    delay(3000);
+  distance_left.begin();
+  distance_right.begin();
+  while(!Serial) {}
 
-    if (!mpu.setup(0x68, MPU9250Setting(), Wire1)) {  // change to your own address
-        while (1) {
-            Serial.println("MPU connection failed. Please check your connection with `connection_check` example.");
-            delay(5000);
-        }
-    }
+  // start communication with IMU 
+  status = IMU.calibrateMag();
+/*
+  float hxb = 17.168816; // mag bias of 10 uT
+  float hxs = 0.786952; // mag scale factor of 0.97
+  IMU.setMagCalX(hxb,hxs);
 
-    // calibrate anytime you want to
-    Serial.println("Accel Gyro calibration will start in 5sec.");
-    Serial.println("Please leave the device still on the flat plane.");
-    mpu.verbose(true);
-    delay(5000);
-    mpu.calibrateAccelGyro();
+  float hyb = 28.570538; // mag bias of 10 uT
+  float hys = 0.797671; // mag scale factor of 0.97
+  IMU.setMagCalY(hyb,hys);
 
-    Serial.println("Mag calibration will start in 5sec.");
-    Serial.println("Please Wave device in a figure eight until done.");
-    delay(5000);
-    mpu.calibrateMag();
+  float hzb = -15.896074; // mag bias of 10 uT
+  float hzs = 2.102503; // mag scale factor of 0.97
+  IMU.setMagCalZ(hzb,hzs);
+*/
 
-    print_calibration();
-    mpu.verbose(false);
-    delay(2000);
+
+  if (status < 0) {
+    Serial.println("IMU initialization unsuccessful");
+    Serial.println("Check IMU wiring or try cycling power");
+    Serial.print("Status: ");
+    Serial.println(status);
+    while(1) {}
+  }
+  // setting the accelerometer full scale range to +/-8G 
+  IMU.setAccelRange(MPU9250::ACCEL_RANGE_8G);
+  // setting the gyroscope full scale range to +/-500 deg/s
+  IMU.setGyroRange(MPU9250::GYRO_RANGE_500DPS);
+  // setting DLPF bandwidth to 20 Hz
+  IMU.setDlpfBandwidth(MPU9250::DLPF_BANDWIDTH_20HZ);
+  // setting SRD to 19 for a 50 Hz update rate
+  IMU.setSrd(19);
+  
 }
 
 void loop() {
-    if (mpu.update()) {
-        static uint32_t prev_ms = millis();
-        if (millis() > prev_ms + 25) {
-            print_roll_pitch_yaw();
-            prev_ms = millis();
-        }
-    }
+  // read the sensor
+  IMU.readSensor();
+
+  
+
+  // display the data
+  Serial.print(IMU.getMagX_uT(),6);
+  Serial.print("\t");
+  Serial.print(IMU.getMagX_uT(),6);
+  Serial.print("\t");
+  Serial.print(IMU.getMagX_uT(),6);
+  Serial.print("\t");
+  Serial.print(std::atan2(IMU.getMagY_uT(), IMU.getMagX_uT()) * 180 / PI);
+  Serial.print("\t");
+  Serial.print(IMU.getMagZ_uT(),6);
+  Serial.print("\t");
+
+  // delay(20);
+
 }
 
-void print_roll_pitch_yaw() {
-    Serial.print("Yaw, Pitch, Roll: ");
-    Serial.print(mpu.getYaw(), 2);
-    Serial.print(", ");
-    Serial.print(mpu.getPitch(), 2);
-    Serial.print(", ");
-    Serial.println(mpu.getRoll(), 2);
-}
-
-void print_calibration() {
-    Serial.println("< calibration parameters >");
-    Serial.println("accel bias [g]: ");
-    Serial.print(mpu.getAccBiasX() * 1000.f / (float)MPU9250::CALIB_ACCEL_SENSITIVITY);
-    Serial.print(", ");
-    Serial.print(mpu.getAccBiasY() * 1000.f / (float)MPU9250::CALIB_ACCEL_SENSITIVITY);
-    Serial.print(", ");
-    Serial.print(mpu.getAccBiasZ() * 1000.f / (float)MPU9250::CALIB_ACCEL_SENSITIVITY);
-    Serial.println();
-    Serial.println("gyro bias [deg/s]: ");
-    Serial.print(mpu.getGyroBiasX() / (float)MPU9250::CALIB_GYRO_SENSITIVITY);
-    Serial.print(", ");
-    Serial.print(mpu.getGyroBiasY() / (float)MPU9250::CALIB_GYRO_SENSITIVITY);
-    Serial.print(", ");
-    Serial.print(mpu.getGyroBiasZ() / (float)MPU9250::CALIB_GYRO_SENSITIVITY);
-    Serial.println();
-    Serial.println("mag bias [mG]: ");
-    Serial.print(mpu.getMagBiasX());
-    Serial.print(", ");
-    Serial.print(mpu.getMagBiasY());
-    Serial.print(", ");
-    Serial.print(mpu.getMagBiasZ());
-    Serial.println();
-    Serial.println("mag scale []: ");
-    Serial.print(mpu.getMagScaleX());
-    Serial.print(", ");
-    Serial.print(mpu.getMagScaleY());
-    Serial.print(", ");
-    Serial.print(mpu.getMagScaleZ());
-    Serial.println();
-}
+// 17.423672	28.170910	-15.359415
