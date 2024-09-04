@@ -25,8 +25,8 @@ const int kP = 8;
 bool gyro_initialised = false;
 int dir = 0;
 int hit_count = 0;
-const int targets[4] = {83, 176, 247, 331};
-int startingDir = 0;
+int last_noWall = 0;
+const int targets[4] = {15, 285, 190, 100 };
 
 
 
@@ -36,8 +36,14 @@ int angleDifference(int a, int b);
 void initialiseSteering();
 void setSteering(int speed, int percent);
 void correctSteering();
+
+
 void sensorprint();
 void followSegment(int target, int dir);
+int findGotWall(int turnin);
+int findNoWall(int dir);
+
+
 void print_calibration();
 void print_roll_pitch_yaw();
 
@@ -56,7 +62,7 @@ void setup() {
   distance_left.begin();
   distance_right.begin();
   gyro.begin();
- 
+
 
   initialiseSteering();
   //initialiseTurnstile();
@@ -66,114 +72,167 @@ void setup() {
   evo.playTone(NOTE_G4, 300);
   hit_count = 0;
   while (hit_count < 10) {
-    if ( abs(gyro.getHeading() - targets[0]) < 10 ) hit_count++;
+    if (abs(gyro.getHeading() - targets[0]) < 10) hit_count++;
     else hit_count = 0;
     Serial.println("waiting for gyro");
-  }
-
-  for (int i = 0; i < 4; i++) {
-    int startDiff = abs(gyro.getHeading())
-    if (startDiff - targets[i]) < 20) {
-      dir = i; 
-    }
-    
-
+    sensorprint();
   }
   drive_motor.run(250);
-
 }
 
 
 int turns = 0;
-int turningSide = RIGHT;
+int turningSide = BOTH;
 void loop() {
-
-  //sensorprint();
   //wait to be vaugley in line
   evo.playTone(NOTE_A4, 100);
-
-  
   while (abs(gyro.getHeading() - targets[dir]) > 10) {
-    Serial.println("waiting");
     followSegment(targets[dir], turningSide);
     sensorprint();
+    Serial.println("waiting");
   }
   //wait for a wall
   evo.playTone(NOTE_A4, 100);
   hit_count = 0;
   while (hit_count < 4) {
-    int dist_right = distance_right.getDistance();
-    if (dist_right < 800) hit_count++;
-    else if (dist_right != -1000) hit_count = 0;
-    Serial.println("in");
+    int result = findGotWall(turningSide);
+    if (result == 1) hit_count++;
+    else if (result == -1) hit_count = 0;
     followSegment(targets[dir], turningSide);
     sensorprint();
+    Serial.println("in");
+  }
+  //force for 0.75s
+  evo.playTone(NOTE_A4, 100);
+  long t = millis();
+  while (t + 750 > millis()) {
+    followSegment(targets[dir], turningSide);
+    sensorprint();
+    Serial.println("forced time");
   }
   //wait for no wall
   evo.playTone(NOTE_A4, 100);
   hit_count = 0;
   while (hit_count < 4) {
-    int dist_right = distance_right.getDistance();
-    if (dist_right > 800) hit_count++;
-    else if (dist_right != -1000) hit_count = 0;
-    Serial.println("in");
+    int result = findNoWall(turningSide);
+    if (result == 1) hit_count++;
+    else if (result == -1) hit_count = 0;
     followSegment(targets[dir], turningSide);
-    sensorprint();
+    Serial.println(last_noWall);
+    //sensorprint();
+    //Serial.println("in");
   }
- 
-  if (dir == 3) dir = 0;
-  else dir += 1;
+
+  if (turningSide == BOTH) turningSide = last_noWall;
+  if (turningSide == LEFT) {
+    if (dir == 0) dir = 3;
+    else dir -= 1;
+  } else if (turningSide == RIGHT){
+    if (dir == 3) dir = 0;
+    else dir += 1;
+  }
+  
   Serial.println("BANGGGG");
+  Serial.println(targets[dir]);
   turns++;
-  drive_motor.run(0);
-  delay(1000);
-  drive_motor.run(250);
+  evo.playTone(NOTE_A5, 100);
+  //drive_motor.run(0); delay(1000); drive_motor.run(250);
   if (turns == 12) {
+    //wait to be vaugley in line
+    evo.playTone(NOTE_A4, 100);
     while (abs(gyro.getHeading() - targets[dir]) > 10) {
-      Serial.println("waiting");
       followSegment(targets[dir], turningSide);
       sensorprint();
+      Serial.println("waiting");
     }
     //wait for a wall
+    evo.playTone(NOTE_A4, 100);
     hit_count = 0;
     while (hit_count < 4) {
-      int dist_right = distance_right.getDistance();
-      if (dist_right < 800) hit_count++;
-      else if (dist_right != -1000) hit_count = 0;
-      Serial.println("in");
+      int result = findGotWall(turningSide);
+      if (result == 1) hit_count++;
+      else if (result == -1) hit_count = 0;
       followSegment(targets[dir], turningSide);
       sensorprint();
+      Serial.println("in");
+    }
+    //force for 0.75s
+    evo.playTone(NOTE_A4, 100);
+    long t = millis();
+    while (t + 750 > millis()) {
+      followSegment(targets[dir], turningSide);
+      sensorprint();
+      Serial.println("forced time");
     }
     drive_motor.run(0);
-    while (true) {sensorprint();}
+    while (true) { sensorprint(); }
   }
 
-  
-  
+
+
 
   //followSegment(targets[0]);
-}  
+}
+int findGotWall(int turningDir) {
+  if (turningDir == BOTH || turningDir == LEFT) {
+    int dist = distance_left.getDistance();
+    if (dist < 800) return 1;
+    else if (dist != -1000) return -1;
+  }
+  if (turningDir == BOTH || turningDir == RIGHT) {
+    int dist = distance_right.getDistance();
+    if (dist < 800) return 1;
+    else if (dist != -1000) return -1;
+  }
+}
 
+int findNoWall(int turningDir) {
+  if (turningDir == LEFT || last_noWall == 0 || last_noWall == LEFT) {
+    int dist = distance_left.getDistance();
+    if (dist > 800) {
+      last_noWall = LEFT;
+      return 1;
+    }
+    else if (dist != -1000) {
+      if (last_noWall != 0) {
+        last_noWall = 0;
+        return -1;
+      }
+    }
+  }
+  if (turningDir == RIGHT || last_noWall == 0 || last_noWall == RIGHT) {
+    int dist = distance_right.getDistance();
+    Serial.println(dist);
+    if (dist > 800) {
+      last_noWall = RIGHT;
+      return 1;
+    }
+    else if (dist != -1000) {
+      if (last_noWall != 0) {
+        last_noWall = 0;
+        return -1;
+      }
+    }
+  }
+}
 
-void followSegment(int target, int turningSide) {
-  const int thres = 50;
+void followSegment(int target, int turningDir) {
+  const int thres = 150;
 
-  if (turningSide == BOTH || turningSide == LEFT) {
+  if (turningDir == BOTH || turningDir == LEFT) {
     if (distance_left.getDistance() < thres) {
       setSteering(250, -100);
       return;
     }
-  }
-  else if (turningSide == BOTH || turningSide == RIGHT) {
+  } else if (turningDir == BOTH || turningDir == RIGHT) {
     if (distance_right.getDistance() < thres) {
       setSteering(250, 100);
       return;
     }
   }
-  
-  int p = angleDifference(gyro.getHeading(), targets[dir]) * 8;
+
+  int p = angleDifference(targets[dir], gyro.getHeading()) * 5;
   setSteering(250, p);
-  
 }
 
 void sensorprint() {
@@ -236,4 +295,3 @@ int clamp(int a, int lower, int upper) {
   if (a > upper) return upper;
   return a;
 }
-
