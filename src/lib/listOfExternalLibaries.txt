@@ -6,5 +6,5 @@ ESP8266 and ESP32 OLED driver for SSD1306 by ThingPulse, Fabrice Weinbery 4.6.1
 Adafruit_HMC5883_Unified by Adafruit 1.2.3
 EspSoftwareSerial by Dirk Kaar, Peter Lerup 8.1.0
 Adafruit Unified Sensor by Adafruit 1.1.14
-MPU9250 by hideakitai 0.4.8
+MPU9250 by psychogenic 1.0.0
 Adafruit_TCS34725 by Adafruit 1.4.4
