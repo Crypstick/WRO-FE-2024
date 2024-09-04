@@ -18,9 +18,11 @@ This repository contains engineering materials of a self-driven vehicle's model 
 - `schemes` contains one or several schematic diagrams in form of JPEG, PNG or PDF of the electromechanical components illustrating all the elements (electronic components and motors used in the vehicle and how they connect to each other.
   - `Overall System  Diagram.png` contains a photo of our block diagram
   - ` Microcontroller System Diagram.png` contains a photo of our microcontroller system diagram
-- `src` contains code of control software for all components which were programmed to participate in the competition
-  1. `wro_final/wro_final.ino` is our main source code to operate the bot.
-  2. `Evoeditted.zip` is our library required to run our microcontroller.
+- `src` contains the code of our control software for all the components which were programmed to participate in the competition.
+  1. `mainopen/mainopen.ino` is our main source code to operate the bot for the Open Challenge.
+  2. `mainobject/mainobject.ino` is our main source code to operate the bot for the Obstacle Challenge.
+  3. `lib/Evo.zip` is our library required to run our microcontroller, with other external libraries in the folder.
+  4. `lib/external_libraries` is a folder containing all necessary .zip libraries to be added to the Arduino IDE in order for **EVERYTHING** to function.
 - `models` is for the files for models used by 3D printers, laser cutting machines and CNC machines to produce the vehicle elements. If there is nothing to add to this location, the directory can be removed.
   - `VL53LOX lego mount.stl` contains a 3d model of a mount for our time of flight sensor
   - `tcs3472 colour sensor lego mount.stl` contains 3d model of a mount for our colour sensor
@@ -31,15 +33,16 @@ This repository contains engineering materials of a self-driven vehicle's model 
 ### Usage
 
 
-1.⁠ ⁠Install the libraries found in the `Libraries_To_Add.txt` by going to the library manager in the Arduino IDE and installing them by name. **ALL LIBRARIRES ARE REQUIRED FOR THE CODE TO RUN CORRECTLY.**
-2.⁠ ⁠Install `src/EvoEditted.zip` and follow the following on the Arduino IDE: `Sketch --> Include Library --> Add .ZIP Library --> Select EvoEditted.zip`.
-3.⁠ ⁠Open the file `src/wro_final/wro_final.ino` with the Arduino IDE.
+1.⁠ ⁠Install the libraries found in the `src/lib/edternal_libraries` by going to the library manager in the Arduino IDE and installing each of them through the `Add .ZIP Library`. **ALL LIBRARIRES ARE REQUIRED FOR THE CODE TO RUN CORRECTLY.**
+2.⁠ ⁠Install `src/Evo.zip` and follow the following on the Arduino IDE: `Sketch --> Include Library --> Add .ZIP Library --> Select EvoEditted.zip`.
+3.⁠ ⁠Open the desired file (i.e. mainopen.ino or mainobject.ino) with the Arduino IDE.
 
 ## Reminders before running the bot
 
 - Software
   - Ensure that the board is set to ESP32S3
   - Ensure serial bot rate is 115200
+  - Ensure all sensor values have been calibrated to the current environmental conditions
   - Run!
 - Hardware
   - Wires have been connected properly
@@ -48,7 +51,7 @@ This repository contains engineering materials of a self-driven vehicle's model 
   - Spaces on the wheels are correct
 - Placement of the bot
   - Make sure the bot is placed straight
-  - Compass is strongly secured on the bot
+  - Magnetometer is strongly secured on the bot
 
 ## Components used
 
