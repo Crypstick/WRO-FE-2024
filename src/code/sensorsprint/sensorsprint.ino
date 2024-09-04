@@ -31,7 +31,18 @@ VL53L0X distance_right(3);
 HUSKYLENSResult relevantObject;
 
 
-Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_614MS, TCS34725_GAIN_1X);
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_4X);
+
+struct colorCalibration {
+  unsigned int blackValue;
+  unsigned int whiteValue;
+};
+
+int gammatable[256];
+int RGBmap(unsigned int x, unsigned int inlow, unsigned int inhigh, int outlow, int outhigh);
+
+// initiate three stuctures to hold calibration of Red, Green and LED's in TCS3472
+colorCalibration redCal, greenCal, blueCal;
 
 
 
@@ -77,47 +88,81 @@ void setup() {
 
   Serial.println("TCS3472 OK");
 
+    // These values result from calibration of the TCS3472 looking at a black sample and a white sample
+  // Must be edited here once calibration values have been determined
+  redCal.blackValue = 33;
+  redCal.whiteValue = 198;
+  greenCal.blackValue = 23;
+  greenCal.whiteValue = 209;
+  blueCal.blackValue = 15;
+  blueCal.whiteValue = 158;
+
+  /* white
+  Color Temp: 4431 K - Lux: 149 - R: 198 G: 209 B: 158 C: 591  
+  // black
+  Color Temp: 3122 K - Lux: 14 - R: 33 G: 23 B: 15 C: 71  
+  */
+  // Gamma function is Out = In^2.5
+  // Required to correct for human vision
+  // Store values in an array
+  // normalized for 0 to 255
+  for (int i=0; i<256; i++) {
+    float x = i;
+    x /= 255;
+    x = pow(x, 2.5);
+    x *= 255;
+
+    gammatable[i] = int(x);
+    }
 }
 
 void loop() {
-  uint16_t r, g, b, c, colorTemp, lux;
-
+  uint16_t r, g, b, c; // raw values of r,g,b,c as read by TCS3472
+  // Variables used to hold RGB values between 0 and 255
+  int redValue;
+  int greenValue;
+  int blueValue;
+  int clearValue;
+  // colorTemp = tcs.calculateColorTemperature(r, g, b);
   evo.selectI2CChannel(4);
   tcs.getRawData(&r, &g, &b, &c);
-  // colorTemp = tcs.calculateColorTemperature(r, g, b);
-  colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
-  lux = tcs.calculateLux(r, g, b);
-
-  Serial.print("Color Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
-  Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
-  Serial.print("R: "); Serial.print(r, DEC); Serial.print(" ");
-  Serial.print("G: "); Serial.print(g, DEC); Serial.print(" ");
-  Serial.print("B: "); Serial.print(b, DEC); Serial.print(" ");
-  Serial.print("C: "); Serial.print(c, DEC); Serial.print(" ");
+  
+  // Print out raw data resulting from read cycle, use to calibrate bias value
+  Serial.print("R: "); Serial.print(r); Serial.print(" ");
+  Serial.print("G: "); Serial.print(g); Serial.print(" ");
+  Serial.print("B: "); Serial.print(b); Serial.print(" ");
+  Serial.print("C: "); Serial.print(c); Serial.print(" ");
   Serial.println(" ");
+
+  delay(50);
+
+  // Convert TCS3472 raw reading into value between 0 and 255 for analogwrite function
+  redValue = RGBmap(r, redCal.blackValue, redCal.whiteValue, 0, 255);
+  greenValue = RGBmap(g, greenCal.blackValue, greenCal.whiteValue, 0, 255);
+  blueValue = RGBmap(b, blueCal.blackValue, blueCal.whiteValue, 0, 255);
+
+  // Print out values
+  Serial.print("RValue: "); Serial.print(redValue); Serial.print(" ");
+  Serial.print("GValue: "); Serial.print(greenValue); Serial.print(" ");
+  Serial.print("BValue: "); Serial.print(blueValue); Serial.print(" ");
+  Serial.println(" ");
+
 }
 
-void i2c_generic_write(uint8_t const i2c_slave_addr, uint8_t const reg_addr, uint8_t const * buf, uint8_t const num_bytes)
-{
-  Wire.beginTransmission(i2c_slave_addr);
-  Wire.write(reg_addr);
-  for(uint8_t bytes_written = 0; bytes_written < num_bytes; bytes_written++) {
-    Wire.write(buf[bytes_written]);
-  }
-  Wire.endTransmission();
+// Function to map TCS3472 values to 0 to 255
+// Same as Arduino map() function - rewritten to make variables compatiable with inputs and outputs
+int RGBmap(unsigned int x, unsigned int inlow, unsigned int inhigh, int outlow, int outhigh){
+  float flx = float(x);
+  float fla = float(outlow);
+  float flb = float(outhigh);
+  float flc = float(inlow);
+  float fld = float(inhigh);
+
+  float res = ((flx-flc)/(fld-flc))*(flb-fla) + fla;
+
+  return int(res);
 }
 
-void i2c_generic_read(uint8_t const i2c_slave_addr, uint8_t const reg_addr, uint8_t * buf, uint8_t const num_bytes)
-{
-  Wire.beginTransmission(i2c_slave_addr);
-  Wire.write(reg_addr);
-  Wire.endTransmission();
-
-  Wire.requestFrom(i2c_slave_addr, num_bytes);
-  for(uint8_t bytes_read = 0; (bytes_read < num_bytes) && Wire.available(); bytes_read++) {
-    buf[bytes_read] = Wire.read();
-  }
-}
 
 void initialiseSteering() {
   steer_motor.resetAngle();
