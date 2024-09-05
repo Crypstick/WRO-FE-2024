@@ -117,6 +117,10 @@ void setup() {
 }
 
 void loop() {
+  int bingbong = distance_right.getDistance();
+  Serial.print("distance right: ");
+  Serial.println(bingbong);
+
   uint16_t r, g, b, c; // raw values of r,g,b,c as read by TCS3472
   // Variables used to hold RGB values between 0 and 255
   int redValue;
@@ -125,6 +129,7 @@ void loop() {
   int clearValue;
   // colorTemp = tcs.calculateColorTemperature(r, g, b);
   evo.selectI2CChannel(4);
+  delay(10);
   tcs.getRawData(&r, &g, &b, &c);
   
   // Print out raw data resulting from read cycle, use to calibrate bias value
@@ -146,6 +151,8 @@ void loop() {
   Serial.print("GValue: "); Serial.print(greenValue); Serial.print(" ");
   Serial.print("BValue: "); Serial.print(blueValue); Serial.print(" ");
   Serial.println(" ");
+
+  
 
 }
 
