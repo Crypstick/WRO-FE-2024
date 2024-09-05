@@ -11,8 +11,8 @@ EV3Motor drive_motor(M2, false);
 EV3Motor turnstile_motor(M4, false);
 
 MPU gyro;
-VL53L0X distance_left(2);
-VL53L0X distance_right(3);
+VL53L0X distance_left(1);
+VL53L0X distance_right(4);
 
 //Universal variables
 #define WAIT_FOR_ALIGNMENT 0

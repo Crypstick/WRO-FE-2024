@@ -19,6 +19,7 @@ MPU gyro;
 //VL53L0X distance_front(4);
 VL53L0X distance_left(2);
 VL53L0X distance_right(3);
+EV3Motor drive_motor(M2, false);
 
 HUSKYLENS huskylens;
 SoftwareSerial mySerial(43, 44); // RX, TX REMMBER TO FLIP BACK TO 43, 44
@@ -44,6 +45,7 @@ void setup() {
   evo.beginDisplay();
   evo.writeToDisplay(evo.getBattery(), 0, true);
 
+  drive_motor.begin();
   distance_left.begin();
   distance_right.begin();
   //distance_front.begin();
@@ -60,12 +62,19 @@ void setup() {
   }
 
   evo.selectI2CChannel(COLOR_PIN);
+  delay(10);
   if (tcs.begin()) {
     Serial.println("Found sensor");
   } else {
     Serial.println("No TCS34725 found ... check your connections");
     while (1);
   }
+  redCal.blackValue = 33;
+  redCal.whiteValue = 235;
+  greenCal.blackValue = 25;
+  greenCal.whiteValue = 245;
+  blueCal.blackValue = 20;
+  blueCal.whiteValue = 188;
   for (int i=0; i<256; i++) {
     float x = i;
     x /= 255;
@@ -78,19 +87,21 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  /*
+  
   Serial.print(gyro.getHeading());
+  /*
   //Serial.print(", front dist: ");
   //Serial.print(distance_front.getDistance());
   Serial.print(", left dist: ");
   Serial.print(distance_left.getDistance());
   Serial.print(", right dist: ");
   Serial.print(distance_right.getDistance());
-  Serial.print(", color: ");
-  Serial.print(getColor(false));
   */
+  Serial.print(", color: ");
+  Serial.print(getColor(true));
   Serial.print(", camera: ");
   if (findRelevantObject()) {
+    drive_motor.run(250);
     printResult(relevantObject);
     int inWidth = relevantObject.width;
     int length = relevantObject.height;
@@ -98,7 +109,10 @@ void loop() {
     if (inWidth < 80 || area < 6000 || inWidth > length) Serial.println("tracking");
     else Serial.println("hardcode");
   }
-  else Serial.println("No relevent object!");
+  else {
+    Serial.println("No relevent object!");
+    drive_motor.brake();
+  }
 }
 
 void printResult(HUSKYLENSResult result){
@@ -132,7 +146,8 @@ int getColor(bool printRaw) {
     Serial.print("\t : ");
   }
 
-  if (redValue > greenValue && redValue > blueValue) return ORANGE;
+  if (redValue + greenValue + blueValue > 600) return WHITE;
+  else if (redValue > greenValue && redValue > blueValue) return ORANGE;
   else if (blueValue > redValue && blueValue > greenValue) return BLUE;
   else return WHITE;
 

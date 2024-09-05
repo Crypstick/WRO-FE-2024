@@ -53,7 +53,6 @@ int turningSide = BOTH;
 int blocks_passed = 0;
 int nowall_hitCount = 0;
 bool aligned_once = false;
-int gammatable[256];
 
 
 struct colorCalibration {
@@ -75,6 +74,8 @@ void setStartingDir();
 bool findRelevantObject();
 bool alignToHeading();
 void waitForWall();
+
+void turningPoint();
 
 int correctColorTrigger(int dir);
 void followSegment(int target, int dir);
@@ -123,35 +124,33 @@ void setup() {
     delay(100);
   }
 
-  evo.selectI2CChannel(COLOR_PIN);
+  /*
+  
   if (tcs.begin()) {
     Serial.println("Found sensor");
   } else {
     Serial.println("No TCS34725 found ... check your connections");
-    while (1)
-      ;
+    while (1) {}
+  }
+  */
+  evo.selectI2CChannel(COLOR_PIN);
+  delay(10);
+  if (tcs.begin()) {
+    Serial.println("Found sensor");
+  } else {
+    Serial.println("No TCS34725 found ... check your connections");
+    while (1);
   }
   redCal.blackValue = 33;
-  redCal.whiteValue = 198;
-  greenCal.blackValue = 23;
-  greenCal.whiteValue = 209;
-  blueCal.blackValue = 15;
-  blueCal.whiteValue = 158;
-  for (int i = 0; i < 256; i++) {
-    float x = i;
-    x /= 255;
-    x = pow(x, 2.5);
-    x *= 255;
-
-    gammatable[i] = int(x);
-  }
-  while (false) {
-    Serial.println(getColor());
-  }
+  redCal.whiteValue = 235;
+  greenCal.blackValue = 25;
+  greenCal.whiteValue = 245;
+  blueCal.blackValue = 20;
+  blueCal.whiteValue = 188;
 
   setStartingDir();
   Serial.println(dir);
-  delay(2000);
+  
   int t = millis();
   while (t + 500 > millis()) {
     sensorprint();
@@ -161,12 +160,17 @@ void setup() {
 //--------------------------------------------LOOOP-------------------------------------
 
 void loop() {
-  int old_turningSide = turningSide;
+  //int old_turningSide = turningSide;
+  alignToHeading();
+  /*
   if (correctColorTrigger(turningSide) == old_turningSide) {
     Serial.println("color");
     turningPoint();
-    return;
+  } else{
+  alignToHeading();
   }
+  */
+  /*
   if (findRelevantObject() && blocks_passed < 2 && aligned_once && false) {
     int inWidth = relevantObject.width;
     int length = relevantObject.height;
@@ -229,10 +233,12 @@ void loop() {
     } else {
       Serial.print("Not aligned to heading: ");
       Serial.println(targets[dir]);
-    } */
-  }
-  Serial.println();
+    } 
+  }*/
+  Serial.println("end loop");
   //delay(50);
+  
+
 }
 //--------------------------------------------LOOOP-------------------------------------
 
@@ -321,21 +327,21 @@ bool alignToHeading() {
   //Serial.println("WAIT_FOR_ALIGNMENT");
 }
 
-int correctColorTrigger(int dir) {
+int correctColorTrigger(int turningDir) {
   int color = getColor();
-  if (dir == LEFT && color == BLUE) {
-    return dir;
+  if (turningDir == LEFT && color == BLUE) {
+    return turningDir;
   }
-  if (dir == RIGHT && color == ORANGE) {
-    return dir;
+  if (turningDir == RIGHT && color == ORANGE) {
+    return turningDir;
   }
-  if (dir == BOTH && color != WHITE) {
+  if (turningDir == BOTH && color != WHITE) {
     if (color == BLUE) {
       turningSide = LEFT;
     } else if (color == ORANGE) {
       turningSide = RIGHT;
     }
-    return dir;
+    return turningDir;
   }
   return -1;
 }
@@ -370,7 +376,8 @@ int findNoWall(int turningDir) {
 */
 
 void followSegment(int target, int turningDir) {
-  drive_motor.run(driveSpeed);
+  Serial.println("we runnning");
+  drive_motor.run(250);
   const int thres = 150;
   /*
   if (turningDir == BOTH || turningDir == LEFT) {
@@ -411,7 +418,8 @@ int getColor() {
   Serial.print(blueValue);
   Serial.print("\t : ");
 
-  if (redValue > greenValue && redValue > blueValue) return ORANGE;
+  if (redValue + greenValue + blueValue > 600) return WHITE;
+  else if (redValue > greenValue && redValue > blueValue) return ORANGE;
   else if (blueValue > redValue && blueValue > greenValue) return BLUE;
   else return WHITE;
 }

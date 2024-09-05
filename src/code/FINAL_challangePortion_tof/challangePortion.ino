@@ -6,7 +6,6 @@
 
 #include <SoftwareSerial.h>
 #include <HUSKYLENS.h>
-#include "Adafruit_TCS34725.h"
 
 #define TCA9548A_ADDR 0x70
 #define BQ25887_ADDR 0x6A
@@ -23,14 +22,19 @@ EV3Motor drive_motor(M2, false);
 EV3Motor turnstile_motor(M4, false);
 MPU gyro;
 //VL53L0X distance_front(1);
-//VL53L0X distance_left(2);
-//VL53L0X distance_right(3);
-const int COLOR_PIN = 4;
+VL53L0X distance_left(2);
+VL53L0X distance_right(3);
+
 
 HUSKYLENSResult relevantObject;
-Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_4X);
 
 //Universal variables
+#define WAIT_FOR_ALIGNMENT 0
+#define WAIT_FOR_WALL 1
+#define FORCED_GYRO 2
+#define WAIT_FOR_NO_WALL 3
+#define OPEN 0
+#define OBSTACLE 1
 #define BOTH 0
 #define LEFT 1
 #define RIGHT 2
@@ -40,9 +44,9 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 
 const int STEERINGDIFFERENCE = 100;
 const int kP = 7;
-const int targets[4] = {90, 7, 270, 187};  // clockwise manner
+const int targets[4] = { 95, 8, 271, 181 };  // clockwise manner
 const int driveSpeed = 150;
-const int headingAligned_thres = 10;
+const int headingAligned_thres = 60;
 
 
 long hit_count = 0;
@@ -50,21 +54,13 @@ int dir = 0;
 int last_noWall = 0;
 int turns = 0;
 int turningSide = BOTH;
-int blocks_passed = 0;
+int blocks_passed = 2;
 int nowall_hitCount = 0;
 bool aligned_once = false;
 int gammatable[256];
 
 
-struct colorCalibration {
-  unsigned int blackValue;
-  unsigned int whiteValue;
-};
 
-int RGBmap(unsigned int x, unsigned int inlow, unsigned int inhigh, int outlow, int outhigh);
-
-// initiate three stuctures to hold calibration of Red, Green and LED's in TCS3472
-colorCalibration redCal, greenCal, blueCal;
 
 //function prototypes
 
@@ -76,12 +72,11 @@ bool findRelevantObject();
 bool alignToHeading();
 void waitForWall();
 
-int correctColorTrigger(int dir);
+void openPortion();
 void followSegment(int target, int dir);
 int findGotWall(int turnin);
 int findNoWall(int dir);
 
-int getColor();
 void sensorprint();
 void correctSteering();
 int angleDifference(int a, int b);
@@ -103,8 +98,8 @@ void setup() {
   drive_motor.begin();
   turnstile_motor.begin();
 
-  //distance_left.begin();
-  //distance_right.begin();
+  distance_left.begin();
+  distance_right.begin();
   //distance_front.begin();
   gyro.begin();
 
@@ -123,31 +118,6 @@ void setup() {
     delay(100);
   }
 
-  evo.selectI2CChannel(COLOR_PIN);
-  if (tcs.begin()) {
-    Serial.println("Found sensor");
-  } else {
-    Serial.println("No TCS34725 found ... check your connections");
-    while (1)
-      ;
-  }
-  redCal.blackValue = 33;
-  redCal.whiteValue = 198;
-  greenCal.blackValue = 23;
-  greenCal.whiteValue = 209;
-  blueCal.blackValue = 15;
-  blueCal.whiteValue = 158;
-  for (int i = 0; i < 256; i++) {
-    float x = i;
-    x /= 255;
-    x = pow(x, 2.5);
-    x *= 255;
-
-    gammatable[i] = int(x);
-  }
-  while (false) {
-    Serial.println(getColor());
-  }
 
   setStartingDir();
   Serial.println(dir);
@@ -161,13 +131,14 @@ void setup() {
 //--------------------------------------------LOOOP-------------------------------------
 
 void loop() {
-  int old_turningSide = turningSide;
-  if (correctColorTrigger(turningSide) == old_turningSide) {
-    Serial.println("color");
+  /*
+  if ((abs(gyro.getHeading() - targets[dir]) < headingAligned_thres) && findNoWall(turningSide) == 1) {
     turningPoint();
     return;
-  }
-  if (findRelevantObject() && blocks_passed < 2 && aligned_once && false) {
+  } 
+  */
+  if (findRelevantObject() && blocks_passed < 2 && aligned_once) {
+
     int inWidth = relevantObject.width;
     int length = relevantObject.height;
     int area = relevantObject.height * inWidth;
@@ -213,15 +184,13 @@ void loop() {
     }
 
   } else {
-    Serial.println(F("No block or arrow appears on the screen!"));
-    alignToHeading();
-    /*
+    //Serial.println(F("No block or arrow appears on the screen!"));
     if (alignToHeading()) {
       if (blocks_passed > 0) {
         int wallness = findNoWall(turningSide);
         if (wallness == 1) nowall_hitCount++;
         else if (wallness == -1) nowall_hitCount = 0;
-        if (nowall_hitCount > 0) turningPoint();  //turning
+        if (nowall_hitCount > 3) turningPoint();  //turning
         else Serial.println("theres no no-wall");
       } else {
         Serial.println("no block passed yet");
@@ -229,10 +198,10 @@ void loop() {
     } else {
       Serial.print("Not aligned to heading: ");
       Serial.println(targets[dir]);
-    } */
+    }
   }
   Serial.println();
-  //delay(50);
+  delay(50);
 }
 //--------------------------------------------LOOOP-------------------------------------
 
@@ -252,6 +221,7 @@ void turningPoint() {
     else dir += 1;
   }
   nowall_hitCount = 0;
+  delay(900);
   /*
   while (!alignToHeading()) {}
   setSteering(250, 0);
@@ -321,26 +291,6 @@ bool alignToHeading() {
   //Serial.println("WAIT_FOR_ALIGNMENT");
 }
 
-int correctColorTrigger(int dir) {
-  int color = getColor();
-  if (dir == LEFT && color == BLUE) {
-    return dir;
-  }
-  if (dir == RIGHT && color == ORANGE) {
-    return dir;
-  }
-  if (dir == BOTH && color != WHITE) {
-    if (color == BLUE) {
-      turningSide = LEFT;
-    } else if (color == ORANGE) {
-      turningSide = RIGHT;
-    }
-    return dir;
-  }
-  return -1;
-}
-
-/*
 int findNoWall(int turningDir) {
   if (turningDir == LEFT || (turningDir == BOTH && (last_noWall == 0 || last_noWall == LEFT))) {
     int dist = distance_left.getDistance();
@@ -367,7 +317,6 @@ int findNoWall(int turningDir) {
     }
   }
 }
-*/
 
 void followSegment(int target, int turningDir) {
   drive_motor.run(driveSpeed);
@@ -391,51 +340,12 @@ void followSegment(int target, int turningDir) {
   setSteering(250, p);
 }
 
-int getColor() {
-  uint16_t r, g, b, c;  // raw values of r,g,b,c as read by TCS3472
-  // Variables used to hold RGB values between 0 and 255
-  int redValue;
-  int greenValue;
-  int blueValue;
-  int clearValue;
-  evo.selectI2CChannel(COLOR_PIN);
-  tcs.getRawData(&r, &g, &b, &c);
-
-  redValue = RGBmap(r, redCal.blackValue, redCal.whiteValue, 0, 255);
-  greenValue = RGBmap(g, greenCal.blackValue, greenCal.whiteValue, 0, 255);
-  blueValue = RGBmap(b, blueCal.blackValue, blueCal.whiteValue, 0, 255);
-  Serial.print(redValue);
-  Serial.print("\t");
-  Serial.print(greenValue);
-  Serial.print("\t");
-  Serial.print(blueValue);
-  Serial.print("\t : ");
-
-  if (redValue > greenValue && redValue > blueValue) return ORANGE;
-  else if (blueValue > redValue && blueValue > greenValue) return BLUE;
-  else return WHITE;
-}
-
-int RGBmap(unsigned int x, unsigned int inlow, unsigned int inhigh, int outlow, int outhigh) {
-  float flx = float(x);
-  float fla = float(outlow);
-  float flb = float(outhigh);
-  float flc = float(inlow);
-  float fld = float(inhigh);
-
-  float res = ((flx - flc) / (fld - flc)) * (flb - fla) + fla;
-
-  return int(res);
-}
-
 void sensorprint() {
   Serial.print(gyro.getHeading());
-  /*
   Serial.print(", left dist: ");
   Serial.print(distance_left.getDistance());
   Serial.print(", right dist: ");
   Serial.print(distance_right.getDistance());
-  */
   Serial.print(", current dir: ");
   Serial.print(dir);
   Serial.print(", blocks passed: ");
