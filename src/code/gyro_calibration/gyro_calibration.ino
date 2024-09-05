@@ -65,19 +65,18 @@ void loop() {
   // read the sensor
   IMU.readSensor();
 
-  
 
   // display the data
-  Serial.print(IMU.getMagX_uT(),6);
-  Serial.print("\t");
-  Serial.print(IMU.getMagX_uT(),6);
-  Serial.print("\t");
-  Serial.print(IMU.getMagX_uT(),6);
-  Serial.print("\t");
   Serial.print(std::atan2(IMU.getMagY_uT(), IMU.getMagX_uT()) * 180 / PI);
-  Serial.print("\t");
-  Serial.print(IMU.getMagZ_uT(),6);
-  Serial.print("\t");
+  Serial.print(", mag bias X, Y, Z:");
+  Serial.print(IMU.getMagBiasX_uT(),6);
+  Serial.print(IMU.getMagBiasY_uT(),6);
+  Serial.print(IMU.getMagBiasX_uT(),6);
+  Serial.print(", mag scale x, y, z:");
+  Serial.print(IMU.getMagScaleFactorX(),6);
+  Serial.print(IMU.getMagScaleFactorY(),6);
+  Serial.print(IMU.getMagScaleFactorZ(),6);
+
 
   // delay(20);
 
