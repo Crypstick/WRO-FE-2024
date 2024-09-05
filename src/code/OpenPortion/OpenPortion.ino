@@ -15,37 +15,46 @@ VL53L0X distance_left(2);
 VL53L0X distance_right(3);
 
 //Universal variables
+#define WAIT_FOR_ALIGNMENT 0
+#define WAIT_FOR_WALL 1
+#define FORCED_GYRO 2
+#define WAIT_FOR_NO_WALL 3
+#define OPEN 0
+#define OBSTACLE 1
 #define BOTH 0
 #define LEFT 1
 #define RIGHT 2
-unsigned short STARTHEADING;
+
 const int STEERINGDIFFERENCE = 100;
 const int kP = 8;
+const bool gameMode = OPEN;
+const int targets[4] = {360, 265, 182, 113};  // clockwise manner
 
-bool gyro_initialised = false;
+long hit_count = 0;
 int dir = 0;
-int hit_count = 0;
 int last_noWall = 0;
-const int targets[4] = {15, 285, 190, 100 };
+int turns = 0;
+int status = WAIT_FOR_ALIGNMENT;
+int turningSide = BOTH;
+
 
 
 
 //function prototypes
-int angleDifference(int a, int b);
 
 void initialiseSteering();
 void setSteering(int speed, int percent);
-void correctSteering();
+void setStartingDir();
 
-
-void sensorprint();
+void openPortion();
 void followSegment(int target, int dir);
 int findGotWall(int turnin);
 int findNoWall(int dir);
 
+void sensorprint();
+void correctSteering();
+int angleDifference(int a, int b);
 
-void print_calibration();
-void print_roll_pitch_yaw();
 
 void setup() {
   Serial.begin(115200);
@@ -63,116 +72,143 @@ void setup() {
   distance_right.begin();
   gyro.begin();
 
-
   initialiseSteering();
   //initialiseTurnstile();
 
-
   //Plays the buzzer for 300ms
   evo.playTone(NOTE_G4, 300);
-  hit_count = 0;
-  while (hit_count < 10) {
-    if (abs(gyro.getHeading() - targets[0]) < 10) hit_count++;
-    else hit_count = 0;
-    Serial.println("waiting for gyro");
-    sensorprint();
-  }
+
+  setStartingDir();
+  Serial.println(dir);
+  delay(2000);
   drive_motor.run(250);
 }
 
+//--------------------------------------------LOOOP-------------------------------------
 
-int turns = 0;
-int turningSide = BOTH;
 void loop() {
-  //wait to be vaugley in line
-  evo.playTone(NOTE_A4, 100);
-  while (abs(gyro.getHeading() - targets[dir]) > 10) {
-    followSegment(targets[dir], turningSide);
-    sensorprint();
-    Serial.println("waiting");
-  }
-  //wait for a wall
-  evo.playTone(NOTE_A4, 100);
-  hit_count = 0;
-  while (hit_count < 4) {
-    int result = findGotWall(turningSide);
-    if (result == 1) hit_count++;
-    else if (result == -1) hit_count = 0;
-    followSegment(targets[dir], turningSide);
-    sensorprint();
-    Serial.println("in");
-  }
-  //force for 0.75s
-  evo.playTone(NOTE_A4, 100);
-  long t = millis();
-  while (t + 750 > millis()) {
-    followSegment(targets[dir], turningSide);
-    sensorprint();
-    Serial.println("forced time");
-  }
-  //wait for no wall
-  evo.playTone(NOTE_A4, 100);
-  hit_count = 0;
-  while (hit_count < 4) {
-    int result = findNoWall(turningSide);
-    if (result == 1) hit_count++;
-    else if (result == -1) hit_count = 0;
-    followSegment(targets[dir], turningSide);
-    Serial.println(last_noWall);
-    //sensorprint();
-    //Serial.println("in");
-  }
+  Serial.print("dir: ");
+  Serial.print(dir);
+  Serial.print(", status: ");
+  Serial.print(status);
+  Serial.print(", turningSide: ");
+  Serial.print(turningSide);
+  Serial.print(", last_noWall: ");
+  Serial.print(last_noWall);
+  openPortion();
+}
+//--------------------------------------------LOOOP-------------------------------------
 
-  if (turningSide == BOTH) turningSide = last_noWall;
-  if (turningSide == LEFT) {
-    if (dir == 0) dir = 3;
-    else dir -= 1;
-  } else if (turningSide == RIGHT){
-    if (dir == 3) dir = 0;
-    else dir += 1;
-  }
-  
-  Serial.println("BANGGGG");
-  Serial.println(targets[dir]);
-  turns++;
-  evo.playTone(NOTE_A5, 100);
-  //drive_motor.run(0); delay(1000); drive_motor.run(250);
-  if (turns == 12) {
-    //wait to be vaugley in line
-    evo.playTone(NOTE_A4, 100);
-    while (abs(gyro.getHeading() - targets[dir]) > 10) {
+
+
+void openPortion() {
+  //dependent on the following global variables:
+  // gameMode, hit_count, status, turns, turningSide, last_noWall, dir
+  switch (status) {
+    case WAIT_FOR_ALIGNMENT:
+    {
       followSegment(targets[dir], turningSide);
       sensorprint();
-      Serial.println("waiting");
+      Serial.println("WAIT_FOR_ALIGNMENT");
+      if (abs(gyro.getHeading() - targets[dir]) < 10) {
+        status = WAIT_FOR_WALL;
+        hit_count = 0;
+        evo.playTone(NOTE_A4, 100);
+      }
+      break;
     }
-    //wait for a wall
-    evo.playTone(NOTE_A4, 100);
-    hit_count = 0;
-    while (hit_count < 4) {
+
+    case WAIT_FOR_WALL:
+    {
       int result = findGotWall(turningSide);
       if (result == 1) hit_count++;
       else if (result == -1) hit_count = 0;
       followSegment(targets[dir], turningSide);
       sensorprint();
-      Serial.println("in");
+      Serial.println("WAIT_FOR_WALL");
+
+      if (hit_count > 4) {
+        status = FORCED_GYRO;
+        hit_count = millis();
+        evo.playTone(NOTE_A4, 100);
+      }
+      break;
     }
-    //force for 0.75s
-    evo.playTone(NOTE_A4, 100);
-    long t = millis();
-    while (t + 750 > millis()) {
+
+    case FORCED_GYRO:
+    {
       followSegment(targets[dir], turningSide);
       sensorprint();
-      Serial.println("forced time");
+      Serial.println("FORCED_GYRO");
+
+      if (hit_count + 750 < millis()) {
+        status = WAIT_FOR_NO_WALL;
+        hit_count = 0;
+        evo.playTone(NOTE_A4, 100);
+        if (gameMode == OPEN) {  // end of open round???
+          if (turns == 12) {
+            drive_motor.run(0);
+            evo.playTone(NOTE_B3, 500);
+            while (true) sensorprint();
+          }
+        }
+      }
+      break;
     }
-    drive_motor.run(0);
-    while (true) { sensorprint(); }
+
+    case WAIT_FOR_NO_WALL:
+    {
+      int result = findNoWall(turningSide);
+      if (result == 1) hit_count++;
+      else if (result == -1) hit_count = 0;
+      followSegment(targets[dir], turningSide);
+      sensorprint();
+      Serial.println("WAIT_FOR_NO_WALL");
+      if (hit_count > 4) {
+        status = WAIT_FOR_ALIGNMENT;
+        hit_count = 0;
+        evo.playTone(NOTE_A5, 100);
+
+        turns++;
+        //change gyro target
+        if (turningSide == BOTH) turningSide = last_noWall;
+        if (turningSide == LEFT) {
+          if (dir == 0) dir = 3;
+          else dir -= 1;
+        } else if (turningSide == RIGHT) {
+          if (dir == 3) dir = 0;
+          else dir += 1;
+        }
+      }
+      break;
+    }
   }
-
-
-
-
-  //followSegment(targets[0]);
 }
+
+
+void setStartingDir() {
+  int suspect = -1;
+  int hits = 0;
+  int current, closest;
+
+  while (hits < 10) {
+    current = -1;
+    closest = 100000;
+    for (int i = 0; i < 4; i++) {
+      int diff = abs(angleDifference(gyro.getHeading(), targets[i]));
+      if (diff < closest) {
+        closest = diff;
+        current = i;
+      }
+    }
+
+    if (suspect == current) hits++;
+    else hits = 0;
+    suspect = current;
+  }
+  dir = suspect;
+}
+
 int findGotWall(int turningDir) {
   if (turningDir == BOTH || turningDir == LEFT) {
     int dist = distance_left.getDistance();
@@ -187,27 +223,25 @@ int findGotWall(int turningDir) {
 }
 
 int findNoWall(int turningDir) {
-  if (turningDir == LEFT || last_noWall == 0 || last_noWall == LEFT) {
+  if (turningDir == LEFT || (turningDir == BOTH && (last_noWall == 0 || last_noWall == LEFT)) ) {
     int dist = distance_left.getDistance();
     if (dist > 800) {
       last_noWall = LEFT;
       return 1;
-    }
-    else if (dist != -1000) {
+    } else if (dist != -1000) {
       if (last_noWall != 0) {
         last_noWall = 0;
         return -1;
       }
     }
   }
-  if (turningDir == RIGHT || last_noWall == 0 || last_noWall == RIGHT) {
+  if (turningDir == RIGHT || (turningDir == BOTH && (last_noWall == 0 || last_noWall == RIGHT)) ) {
     int dist = distance_right.getDistance();
     Serial.println(dist);
     if (dist > 800) {
       last_noWall = RIGHT;
       return 1;
-    }
-    else if (dist != -1000) {
+    } else if (dist != -1000) {
       if (last_noWall != 0) {
         last_noWall = 0;
         return -1;
@@ -224,7 +258,8 @@ void followSegment(int target, int turningDir) {
       setSteering(250, -100);
       return;
     }
-  } else if (turningDir == BOTH || turningDir == RIGHT) {
+  } 
+  if (turningDir == BOTH || turningDir == RIGHT) {
     if (distance_right.getDistance() < thres) {
       setSteering(250, 100);
       return;
