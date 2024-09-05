@@ -76,10 +76,9 @@ void loop() {
   Serial.print(IMU.getMagScaleFactorX(),6);
   Serial.print(IMU.getMagScaleFactorY(),6);
   Serial.print(IMU.getMagScaleFactorZ(),6);
-
-
-  // delay(20);
+  delay(20);
 
 }
 
 // 17.423672	28.170910	-15.359415
+// 
