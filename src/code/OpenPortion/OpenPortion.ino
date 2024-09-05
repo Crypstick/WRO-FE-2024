@@ -28,7 +28,7 @@ VL53L0X distance_right(3);
 const int STEERINGDIFFERENCE = 100;
 const int kP = 8;
 const bool gameMode = OPEN;
-const int targets[4] = {360, 265, 182, 113};  // clockwise manner
+const int targets[4] = {90, 7, 270, 187};  // clockwise manner
 
 long hit_count = 0;
 int dir = 0;
